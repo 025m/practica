@@ -407,14 +407,20 @@ SELECT price, AVG(speed) AS avg_speed FROM pc GROUP BY price;
 -- Exercise 6.5.1
 
 -- a) Delete all PC's with less than 20 gigabyte of hard disk.
-
--- b) Using two INSERT statements, stoer in the database the fact
+DELETE FROM pc WHERE hd < 20;
+-- b) Using two INSERT statements, store in the database the fact
 -- that PC model 1500 is made by manufacturer A, has speed 3.1, RAM
 -- 1024, hard disk 300, and sells for $2499.
-
+INSERT INTO PC (model, speed, ram, hd, price)
+VALUES (1500, 3.1, 1024, 300, 2499)
+INSERT INTO Product (maker, model, type)
+VALUES ('A', 1500, 'pc');
 -- c) Delete all laptops made by a manufacturer that doesn't make
 -- PC's.
-
+-- DELETE FROM product
+-- WHERE type != 'printer' AND 'pc' NOT IN (
+--     SELECT type FROM product;
+-- )  
 -- d) Manufacturer B buys manufacturer C. Change all products made
 -- by C so they are now made by B.
 
