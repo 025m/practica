@@ -409,4 +409,22 @@ SELECT price, AVG(speed) AS avg_speed FROM pc GROUP BY price;
 -- a) Delete all PC's with less than 20 gigabyte of hard disk.
 
 -- b) Using two INSERT statements, stoer in the database the fact
--- that PC model
+-- that PC model 1500 is made by manufacturer A, has speed 3.1, RAM
+-- 1024, hard disk 300, and sells for $2499.
+
+-- c) Delete all laptops made by a manufacturer that doesn't make
+-- PC's.
+
+-- d) Manufacturer B buys manufacturer C. Change all products made
+-- by C so they are now made by B.
+
+-- e) For each PC, double the amount of hard disk and add 1024
+-- megabytes to the amount of RAM. (Remember that serveral 
+-- attributes can be changed by one UPDATE statement.)
+
+-- f) For each laptop made by manufacturer D, add one inch to the
+-- screen size and subtract $200 from the price.
+
+-- g) Insert the facts that for every laptop there is a PC with the
+-- same manufacturer, speed, RAM, and hard disk, a model number 
+-- 1100 less, and a price that is $500 less.
