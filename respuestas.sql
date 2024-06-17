@@ -417,20 +417,49 @@ INSERT INTO Product (maker, model, type)
 VALUES ('A', 1500, 'pc');
 -- c) Delete all laptops made by a manufacturer that doesn't make
 -- PC's.
--- DELETE FROM product
--- WHERE type != 'printer' AND 'pc' NOT IN (
---     SELECT type FROM product;
--- )  
+DELETE FROM product
+WHERE type = 'laptop' AND maker NOT IN (
+    SELECT DISTINCT maker FROM product 
+    WHERE type = 'pc';
+);
 -- d) Manufacturer B buys manufacturer C. Change all products made
 -- by C so they are now made by B.
-
+UPDATE product
+SET maker = 'B'
+WHERE maker = 'C';
 -- e) For each PC, double the amount of hard disk and add 1024
 -- megabytes to the amount of RAM. (Remember that serveral 
 -- attributes can be changed by one UPDATE statement.)
+UPDATE pc
+SET ram = ram + 1024, hd = hd * 2;
 
+UPDATE pc
+SET ram = ram - 1024, hd = hd / 2;
 -- f) For each laptop made by manufacturer D, add one inch to the
 -- screen size and subtract $200 from the price.
-
+UPDATE laptop
+SET screen = screen + 1, price = price - 200
+WHERE model IN (SELECT model FROM product 
+    WHERE maker = 'D'
+);
 -- g) Insert the facts that for every laptop there is a PC with the
 -- same manufacturer, speed, RAM, and hard disk, a model number 
 -- 1100 less, and a price that is $500 less.
+WITH laptop_data AS (
+    SELECT l.model AS laptop_model, p.maker,
+        l.speed, l.ram, l.hd, l.price
+    FROM laptop AS l
+    JOIN product AS p
+    ON l.model = p.model
+), pc_data AS (
+	SELECT laptop_model - 1100 as pc_model,
+	speed, ram, hd, price-500 as price, maker
+	FROM laptop_data
+), product_data AS (
+	INSERT INTO product (model, maker, type)
+	SELECT pc_model, maker, 'pc'
+	FROM pc_data
+) 
+INSERT INTO pc (model, speed, ram, hd, price)
+SELECT pc_model, speed, ram, hd, price
+FROM pc_data;
