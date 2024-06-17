@@ -145,57 +145,24 @@ HAVING COUNT(hd) >= 2;
 -- Exercise 2.5.1
 -- a) A PC with a processor speed less than 3.00 must not sell for 
 -- more than $800.
-CREATE FUNCTION has_low_speed () RETURNS BOOLEAN AS $$
-BEGIN
-    RETURN
-        NOT EXISTS(
-            SELECT * FROM pc WHERE speed < 3.00 AND price > 800
-        );
-END
-$$ LANGUAGE PLPGSQL;
-ALTER TABLE pc ADD CONSTRAINT price_for_low_processor_speed 
-CHECK(has_low_speed());
-
-ALTER TABLE pc DROP CONSTRAINT price_for_low_processor_speed;
+ALTER TABLE pc
+ADD CONSTRAINT min_speed_min_price
+CHECK (speed < 3.00 AND NOT(price > 800));
 
 -- b) A laptop with a screen size less than 15.4 inches must have
 -- at least a 120 gigabye hard disk or sell for less than $1000.
-CREATE FUNCTION has_screen_size_less_15_4 () RETURNS BOOLEAN AS $$
-BEGIN
-    RETURN
-        NOT EXISTS (
-            SELECT * FROM laptop 
-                WHERE screen < 15.4 AND
-                (hd < 120 AND price >= 1000)
-        );
-END
-$$ LANGUAGE PLPGSQL;
-ALTER TABLE laptop ADD CONSTRAINT min_screen_size_storage_or_price
-CHECK(has_screen_size_less_15_4());
-
-
-ALTER TABLE pc DROP CONSTRAINT min_screen_size_storage_or_price; 
+ALTER TABLE laptop
+ADD CONSTRAINT screen_size_15
+CHECK (NOT (screen < 15.4 AND (hd < 120 AND price >= 1000)));
 
 -- c) No manufacturer of PC's may also make printers.
-CREATE FUNCTION makes_pc_and_makes_printers (_maker CHAR(1), _type CHAR(7))
-RETURNS BOOLEAN AS $$
-BEGIN
-    RETURN 
-        NOT EXISTS(
-            WITH ty AS (SELECT COUNT(*) FROM product
-                WHERE type = _type AND maker = _maker),
-                total AS (SELECT COUNT(*) FROM product
-                WHERE maker = _maker AND (type = 'pc' OR type = 'printer'))
-            SELECT * FROM ty, total WHERE ty.count < total.count
-        );
-END
-$$ LANGUAGE PLPGSQL;
-ALTER TABLE product ADD CONSTRAINT no_pc_and_printers
-CHECK(makes_pc_and_makes_printers(maker, type));
+CREATE UNIQUE INDEX no_pc_and_printer
+ON product(maker)
+WHERE type = 'pc' or type = 'printer';
 
 -- d) If a laptop has a larger main memory than a PC, then the laptop
 -- must also have a higher price than the PC.
-CREATE FUNCTION laptop_has_higher_mem_and_price_than_pc ()
+CREATE OR REPLACE FUNCTION check_laptop_ram_price()
 RETURNS BOOLEAN AS $$
 BEGIN 
     RETURN
@@ -207,7 +174,7 @@ BEGIN
 END
 $$ LANGUAGE PLPGSQL;
 ALTER TABLE laptop ADD CONSTRAINT mem_and_price
-CHECK(laptop_has_higher_mem_and_price_than_pc());
+CHECK(check_laptop_ram_price());
 -- e) A manufacturer of a PC msut also make a laptop with at least
 -- as great a processor speed.
 CREATE FUNCTION min_speed (_model INT)
