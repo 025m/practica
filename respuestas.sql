@@ -156,58 +156,74 @@ ADD CONSTRAINT screen_size_15
 CHECK (NOT (screen < 15.4 AND (hd < 120 AND price >= 1000)));
 
 -- c) No manufacturer of PC's may also make printers.
-CREATE UNIQUE INDEX no_pc_and_printer
-ON product(maker)
-WHERE type = 'pc' or type = 'printer';
-
+CREATE UNIQUE INDEX no_pc_and_printer ON product (maker)
+WHERE
+    type = 'pc'
+    or type = 'printer';
 -- d) If a laptop has a larger main memory than a PC, then the laptop
 -- must also have a higher price than the PC.
 CREATE OR REPLACE FUNCTION check_laptop_ram_price()
 RETURNS BOOLEAN AS $$
 BEGIN 
-    RETURN
-        NOT EXISTS(
-            WITH p AS (SELECT * FROM pc),
-                l AS (SELECT * FROM laptop)
-            SELECT * FROM l, p WHERE l.ram > p.ram AND l.price <= p.price
-        );
+    RETURN NOT EXISTS (
+        WITH
+            p AS (
+                SELECT *
+                FROM pc
+            ),
+            l AS (
+                SELECT *
+                FROM laptop
+            )
+        SELECT *
+        FROM l, p
+        WHERE l.ram > p.ram
+            AND l.price <= p.price
+    );
 END
 $$ LANGUAGE PLPGSQL;
-ALTER TABLE laptop ADD CONSTRAINT mem_and_price
-CHECK(check_laptop_ram_price());
+
+ALTER TABLE laptop 
+ADD CONSTRAINT mem_and_price CHECK (check_laptop_ram_price());
+
 -- e) A manufacturer of a PC msut also make a laptop with at least
 -- as great a processor speed.
-CREATE FUNCTION min_speed (_model INT)
-RETURNS BOOLEAN AS $$
-DECLARE _maker CHAR(1) := (SELECT p.maker FROM product AS p WHERE p.model = _model LIMIT 1);
+CREATE OR REPLACE FUNCTION check_laptop_speed() 
+RETURNS TRIGGER AS $$
+DECLARE
+    laptop_maker CHAR(1);
 BEGIN
-    RETURN
-        NOT EXISTS(
-            WITH m_pc AS (
-                SELECT MIN(pc.speed) FROM product  AS p
-                INNER JOIN pc
-                ON pc.model = p.model
-                WHERE p.maker = _maker),
-            m_laptop AS (
-                SELECT * FROM product AS p
-                INNER JOIN laptop AS l
-                ON l.model = p.model
-                WHERE p.maker = _maker 
-            )
-            SELECT * FROM m_pc, m_laptop
-            WHERE m_laptop.speed > m_pc.min
-        );
-END
-$$ LANGUAGE PLPGSQL;
-ALTER TABLE laptop ADD CONSTRAINT mmm
-CHECK(min_speed());
+    SELECT maker INTO laptop_maker FROM Product WHERE model = NEW.model;
+    
+    IF EXISTS (
+        SELECT 1 
+        FROM Product p1
+        JOIN PC pc ON p1.model = pc.model
+        WHERE p1.maker = laptop_maker
+        AND pc.speed > NEW.speed
+    ) THEN
+        RAISE EXCEPTION 'Trigger raised exception';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER check_laptop_speed_trigger
+BEFORE INSERT OR UPDATE ON Laptop
+FOR EACH ROW EXECUTE FUNCTION check_laptop_speed();
 
 -- Exercise 6.1.3
 
 -- a) Find the model number, memory size, and screen size for
 -- laptops costing more than $1200.
-SELECT model, hd, screen FROM laptop
-WHERE price > 1200;
+SELECT
+    model,
+    hd,
+    screen
+FROM
+    laptop
+WHERE
+    price > 1200;
 -- b) Find all the tuples in the Printer relation for color
 -- Remember that color is a boolean-valued attribute.
 SELECT * FROM printer
