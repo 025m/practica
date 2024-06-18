@@ -368,48 +368,77 @@ pc.model = p.model
 WHERE p.maker = 'A';
 -- d) Find the average price of PC's and laptops made by manufacturer
 -- "D"
-SELECT AVG(pc.price) FROM product 
-JOIN pc ON
-pc.model = product.model
-WHERE product.maker = 'D'
+SELECT
+    AVG(pc.price)
+FROM
+    product
+    JOIN pc ON pc.model = product.model
+WHERE
+    product.maker = 'D'
 UNION
-SELECT AVG(laptop.price) FROM product 
-JOIN laptop ON
-laptop.model = product.model
-WHERE product.maker = 'D';
+SELECT
+    AVG(laptop.price)
+FROM
+    product
+    JOIN laptop ON laptop.model = product.model
+WHERE
+    product.maker = 'D';
 
-SELECT AVG(pc.price), AVG(laptop.price) FROM product 
-JOIN pc ON
-pc.model = product.model
-FULL JOIN laptop ON
-laptop.model = product.model
-WHERE product.maker = 'D';
+SELECT
+    AVG(pc.price),
+    AVG(laptop.price)
+FROM
+    product
+    JOIN pc ON pc.model = product.model
+    FULL JOIN laptop ON laptop.model = product.model
+WHERE
+    product.maker = 'D';
 -- e) Find, for each different price, the average speed of a PC.
-SELECT price, AVG(speed) AS avg_speed FROM pc GROUP BY price;
+SELECT
+    price,
+    AVG(speed) AS avg_speed
+FROM
+    pc
+GROUP BY
+    price;
 
 -- Exercise 6.5.1
 
 -- a) Delete all PC's with less than 20 gigabyte of hard disk.
-DELETE FROM pc WHERE hd < 20;
+DELETE FROM pc
+WHERE
+    hd < 20;
 -- b) Using two INSERT statements, store in the database the fact
 -- that PC model 1500 is made by manufacturer A, has speed 3.1, RAM
 -- 1024, hard disk 300, and sells for $2499.
-INSERT INTO PC (model, speed, ram, hd, price)
-VALUES (1500, 3.1, 1024, 300, 2499)
-INSERT INTO Product (maker, model, type)
-VALUES ('A', 1500, 'pc');
+INSERT INTO
+    PC (model, speed, ram, hd, price)
+VALUES
+    (1500, 3.1, 1024, 300, 2499)
+INSERT INTO
+    Product (maker, model, type)
+VALUES
+    ('A', 1500, 'pc');
 -- c) Delete all laptops made by a manufacturer that doesn't make
 -- PC's.
 DELETE FROM product
-WHERE type = 'laptop' AND maker NOT IN (
-    SELECT DISTINCT maker FROM product 
-    WHERE type = 'pc';
-);
+WHERE
+    type = 'laptop'
+    AND maker NOT IN (
+        SELECT DISTINCT
+            maker
+        FROM
+            product
+        WHERE
+            type = 'pc'
+    );
 -- d) Manufacturer B buys manufacturer C. Change all products made
 -- by C so they are now made by B.
 UPDATE product
-SET maker = 'B'
-WHERE maker = 'C';
+SET
+    maker = 'B'
+WHERE
+    maker = 'C';
 -- e) For each PC, double the amount of hard disk and add 1024
 -- megabytes to the amount of RAM. (Remember that serveral 
 -- attributes can be changed by one UPDATE statement.)
@@ -417,32 +446,68 @@ UPDATE pc
 SET ram = ram + 1024, hd = hd * 2;
 
 UPDATE pc
-SET ram = ram - 1024, hd = hd / 2;
+SET
+    ram = ram - 1024,
+    hd = hd / 2;
 -- f) For each laptop made by manufacturer D, add one inch to the
 -- screen size and subtract $200 from the price.
 UPDATE laptop
-SET screen = screen + 1, price = price - 200
-WHERE model IN (SELECT model FROM product 
-    WHERE maker = 'D'
-);
+SET
+    screen = screen + 1,
+    price = price - 200
+WHERE
+    model IN (
+        SELECT
+            model
+        FROM
+            product
+        WHERE
+            maker = 'D'
+    );
 -- g) Insert the facts that for every laptop there is a PC with the
 -- same manufacturer, speed, RAM, and hard disk, a model number 
 -- 1100 less, and a price that is $500 less.
-WITH laptop_data AS (
-    SELECT l.model AS laptop_model, p.maker,
-        l.speed, l.ram, l.hd, l.price
-    FROM laptop AS l
-    JOIN product AS p
-    ON l.model = p.model
-), pc_data AS (
-	SELECT laptop_model - 1100 as pc_model,
-	speed, ram, hd, price-500 as price, maker
-	FROM laptop_data
-), product_data AS (
-	INSERT INTO product (model, maker, type)
-	SELECT pc_model, maker, 'pc'
-	FROM pc_data
-) 
-INSERT INTO pc (model, speed, ram, hd, price)
-SELECT pc_model, speed, ram, hd, price
-FROM pc_data;
+WITH
+    laptop_data AS (
+        SELECT
+            l.model AS laptop_model,
+            p.maker,
+            l.speed,
+            l.ram,
+            l.hd,
+            l.price
+        FROM
+            laptop AS l
+            JOIN product AS p ON l.model = p.model
+    ),
+    pc_data AS (
+        SELECT
+            laptop_model - 1100 as pc_model,
+            speed,
+            ram,
+            hd,
+            price - 500 as price,
+            maker
+        FROM
+            laptop_data
+    ),
+    product_data AS (
+        INSERT INTO
+            product (model, maker, type)
+        SELECT
+            pc_model,
+            maker,
+            'pc'
+        FROM
+            pc_data
+    )
+INSERT INTO
+    pc (model, speed, ram, hd, price)
+SELECT
+    pc_model,
+    speed,
+    ram,
+    hd,
+    price
+FROM
+    pc_data;
