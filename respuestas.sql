@@ -197,9 +197,9 @@ BEGIN
     
     IF EXISTS (
         SELECT 1 
-        FROM Product p1
-        JOIN PC pc ON p1.model = pc.model
-        WHERE p1.maker = laptop_maker
+        FROM Product AS p
+        JOIN PC AS pc ON p.model = pc.model
+        WHERE p.maker = laptop_maker
         AND pc.speed > NEW.speed
     ) THEN
         RAISE EXCEPTION 'Trigger raised exception';
