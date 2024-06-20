@@ -467,47 +467,46 @@ WHERE
 -- g) Insert the facts that for every laptop there is a PC with the
 -- same manufacturer, speed, RAM, and hard disk, a model number 
 -- 1100 less, and a price that is $500 less.
-WITH
-    laptop_data AS (
-        SELECT
-            l.model AS laptop_model,
-            p.maker,
-            l.speed,
-            l.ram,
-            l.hd,
-            l.price
-        FROM
-            laptop AS l
-            JOIN product AS p ON l.model = p.model
-    ),
-    pc_data AS (
-        SELECT
-            laptop_model - 1100 as pc_model,
-            speed,
-            ram,
-            hd,
-            price - 500 as price,
-            maker
-        FROM
-            laptop_data
-    ),
-    product_data AS (
-        INSERT INTO
-            product (model, maker, type)
-        SELECT
-            pc_model,
-            maker,
-            'pc'
-        FROM
-            pc_data
-    )
 INSERT INTO
     pc (model, speed, ram, hd, price)
 SELECT
-    pc_model,
-    speed,
-    ram,
-    hd,
-    price
+    l.model - 1100 AS laptop_model,
+    l.speed,
+    l.ram,
+    l.hd,
+    l.price - 500 as price
 FROM
-    pc_data;
+    laptop AS l
+    JOIN product AS p ON l.model = p.model
+WHERE
+    NOT EXISTS (
+        SELECT
+            1
+        FROM
+            pc AS tmp
+            JOIN product AS p2 ON tmp.model = p2.model
+        WHERE
+            p.maker = p2.maker
+            AND l.speed = tmp.speed
+            AND l.ram = tmp.ram
+            AND l.hd = tmp.hd
+    );
+
+INSERT INTO
+    product (maker, model, type)
+SELECT
+    p1.maker,
+    pc.model,
+    'pc' AS type
+FROM
+    pc
+    JOIN product AS p1 ON pc.model + 1100 = p1.model
+WHERE
+    NOT EXISTS (
+        SELECT
+            1
+        FROM
+            product AS p2
+        WHERE
+            p2.model = pc.model
+    );
